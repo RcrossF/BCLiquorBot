@@ -1,5 +1,5 @@
 # BCLiquorBot
-Integrates the BC liquor site into slack. Based on defined weights it will return the top 5 best products for you to buy. Currently the available weights are value(proof/$) and ratings(bc liquor online store). The default of 80/20 seem to work well.
+Based on defined weights this bot will return the top 5 "best" products for you to buy. Currently the available weights are value(proof/$) and ratings(bc liquor online store). The default of 80/20 seem to work well for finding wildly cheap and strong drinks.
 
 ## Usage
 1. Create a slack app and add your token to slack.py
