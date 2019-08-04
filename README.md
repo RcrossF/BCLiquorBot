@@ -6,7 +6,8 @@ Based on defined weights this bot will return the top 5 "best" products for you 
 2. If you live elsewhere in BC you must update the coordinates in bot.py as they currently use a 5km radius around Victoria for available stores
 3. Call the bot with the following syntax:
 
-@botname get "searchTerm(eg. rum, beer, gin, all, etc)" "maxPrice(0 for none)" "store(matches a partial store name, or all)"
-For example:
-@liquorbot get gin 60 all
+@botname get "searchTerm(eg. rum, beer, gin, all, etc)" "maxPrice(0 for none)" "store(matches a partial store name, or all)"  
+For example:  
+@liquorbot get gin 60 all  
+or  
 @liquorbot get all 0 fairfield
