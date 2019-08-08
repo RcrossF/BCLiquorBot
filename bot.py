@@ -7,8 +7,12 @@ def fetchProducts():
 
     url = "http://www.bcliquorstores.com/ajax/browse"
     params = dict(size=10000)
-    res = req.get(url=url, params=params)
-    data = res.json()
+    res = req.get(url=url, params=params, timeout=10)
+    try:
+        data = res.json()
+    except req.exceptions.Timeout as e:
+        return "BC Liquor is down"
+    
     list = [] #to append drinks to
     for sku in data['hits']['hits']:
         if(sku['_source']['currentPrice'] == None or sku['_source']['availableUnits'] == 0): #Skip drinks missing prices or with 0 available units
