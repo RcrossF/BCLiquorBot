@@ -143,6 +143,6 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
     return list
 
 
-for entry in filterProducts(maxPrice=30, type="gin"):
-    print(entry)
-    print("\n")
+#for entry in filterProducts(maxPrice=30, type="gin"):
+#    print(entry)
+#    print("\n")
