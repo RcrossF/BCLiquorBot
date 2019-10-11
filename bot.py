@@ -1,20 +1,36 @@
 import requests as req
 import json
+from datetime import datetime as dt
 
-def fetchProducts():
-    valWeight = 0.8
-    ratingWeight = 0.2
+valWeight = 0.8
+ratingWeight = 0.2
+url = "http://www.bcliquorstores.com/ajax/browse"
+params = dict(size=6000,page=1)
+products = []
 
-    url = "http://www.bcliquorstores.com/ajax/browse"
-    params = dict(size=10000)
+#Fetches results in buckets of 6000 and merges before returning
+def fetch_web():
     res = req.get(url=url, params=params, timeout=10)
     try:
         data = res.json()
+        products = data['hits']['hits']
+        total_pages = data['hits']['total_pages']
+
+        for i in range(2,total_pages+1):
+            params['page'] = i
+            res = req.get(url=url, params=params, timeout=10)
+            data = res.json()
+            products += data['hits']['hits']
+
     except req.exceptions.Timeout as e:
         return "BC Liquor is down"
-    
+
+    return products
+
+def fetchProducts():
+    prods = fetch_web()
     list = [] #to append drinks to
-    for sku in data['hits']['hits']:
+    for sku in prods:
         if(sku['_source']['currentPrice'] == None or sku['_source']['availableUnits'] == 0): #Skip drinks missing prices or with 0 available units
             continue
 
@@ -84,7 +100,7 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
     topResults = []
     url = "http://www.bcliquorstores.com/stores/search"
     params = dict(
-        lat=48.428, #Ideally would get the user's location but this is integrating with slack that doesn't support that so use the middle of victoria witha 5km radius
+        lat=48.428, #Ideally would get the user's location but this is integrating with slack which doesn't support that so use the middle of victoria with a 5km radius
         lng=-123.365,
         rad=5,
         sku=None
@@ -124,4 +140,6 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
 
     return list
 
-#filterProducts(maxPrice=30, type="gin", filterStore="fort")
+for entry in filterProducts(maxPrice=30, type="gin"):
+    print(entry)
+    print("\n")
