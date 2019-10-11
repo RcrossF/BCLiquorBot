@@ -4,6 +4,7 @@ from datetime import datetime as dt
 
 valWeight = 0.8
 ratingWeight = 0.2
+storesUrl = "http://www.bcliquorstores.com/stores/search"
 url = "http://www.bcliquorstores.com/ajax/browse"
 params = dict(size=6000,page=1)
 products = []
@@ -69,13 +70,14 @@ def fetchProducts():
 def filterProducts(maxPrice = 0, type = None, filterStore="all"):
     list = fetchProducts()
 
+
+
     # Filter out all products that are greater than maxPrice or aren't the type we're looking for
     if(maxPrice != 0):
         i = 0
         while i < len(list):
             if (list[i]['price']*1.15) > maxPrice: #Account for tax
                 del(list[i])
-                i = 0
                 continue
             i = i+1
 
@@ -90,15 +92,16 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
 
             if ((type.lower() not in list[i]['type'].lower()) and (type.lower() not in list[i]['category'].lower())):
                del(list[i])
-               i = 0
                continue
             i += 1
+
 
     #Sort on adjusted value
     list.sort(key=lambda k: k['adjValue'], reverse=True)
 
+
     topResults = []
-    url = "http://www.bcliquorstores.com/stores/search"
+    
     params = dict(
         lat=48.428, #Ideally would get the user's location but this is integrating with slack which doesn't support that so use the middle of victoria with a 5km radius
         lng=-123.365,
@@ -114,7 +117,7 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
         params['sku'] = list[i]['sku'] #Set sku
 
         #make network request, will return all stores that have product in stock
-        res = req.get(url=url, params=params)
+        res = req.get(url=storesUrl, params=params)
         data = res.json()
 
         list[i]['stores'] = []
@@ -132,13 +135,13 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
         #If no stores were found drop the product
         if not list[i]['stores'] or len(list[i]['stores']) < 1:
             del(list[i])
-            i = 0
             continue
         i = i+1
         #else:
             #print(("SKU: {} with value rating of {}, adjusted score of {}. Customers rated it {}/5").format(prod['sku'], prod['value'], prod['adjValue'], prod['rating']))
 
     return list
+
 
 for entry in filterProducts(maxPrice=30, type="gin"):
     print(entry)
