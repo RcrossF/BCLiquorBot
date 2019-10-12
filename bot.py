@@ -115,15 +115,20 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
 
     #Append remaining products with location data of stores that carry it and are open now
     i = 0
+    errors = 0
     while i < len(list):
         params['sku'] = list[i]['sku'] #Set sku
 
         #make network request, will return all stores that have product in stock
         res = req.get(url=storesUrl, params=params)
-        if res.status_code != 200: #Site sometimes returns a 503 so keep trying until we get a good response
+        if res.status_code != 200 and errors < 5: #Site sometimes returns a 503 so keep trying until we get a good response
+            errors += 1
             time.sleep(0.5)
             continue
-
+        elif errors >= 5:
+            return "BC Liquor site returning error: "+res.status_code
+            
+        errors = 0
         data = res.json()
 
         list[i]['stores'] = []
