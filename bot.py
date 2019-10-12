@@ -1,9 +1,11 @@
 import requests as req
 import json
-from datetime import datetime as dt
+import time
 
-valWeight = 0.8
-ratingWeight = 0.2
+valWeight = 0.9
+ratingWeight = 0.1
+saleWeight = 0.2
+
 storesUrl = "http://www.bcliquorstores.com/stores/search"
 url = "http://www.bcliquorstores.com/ajax/browse"
 params = dict(size=6000,page=1)
@@ -36,6 +38,8 @@ def fetchProducts():
             continue
 
         price = float(sku['_source']['currentPrice'])
+        regPrice = float(sku['_source']['regularPrice'])
+        sale = (1 - (price/regPrice))*100 # % savings
         units = sku['_source']['unitSize'] # #bottles/cans in product
         vol = float(sku['_source']['volume']) # volume/unit
         alc = (float(sku['_source']['alcoholPercentage']))/100 # % alcohol
@@ -49,7 +53,8 @@ def fetchProducts():
             rating = sku['_source']['consumerRating']
 
         #2 minute garbage algorithm to weight value and ratings. I'm not a math major
-        adjvalue = ((value*valWeight)*2)+(rating*ratingWeight)
+        #Scale all values to 100 so weighting is even
+        adjvalue = ((value*40)*valWeight) + ((rating*20)*ratingWeight)+((sale*2)*saleWeight)
 
         list.append(dict(
             name = sku['_source']['name'],
@@ -62,7 +67,8 @@ def fetchProducts():
             rating = rating,
             sku = sku['_source']['sku'],
             value = round(value, 1),
-            adjValue = round(adjvalue, 1)
+            adjValue = round(adjvalue, 1),
+            sale = sale
         ))
 
     return list
@@ -70,14 +76,13 @@ def fetchProducts():
 def filterProducts(maxPrice = 0, type = None, filterStore="all"):
     list = fetchProducts()
 
-
-
     # Filter out all products that are greater than maxPrice or aren't the type we're looking for
     if(maxPrice != 0):
         i = 0
         while i < len(list):
             if (list[i]['price']*1.15) > maxPrice: #Account for tax
                 del(list[i])
+                #i = 0
                 continue
             i = i+1
 
@@ -92,15 +97,12 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
 
             if ((type.lower() not in list[i]['type'].lower()) and (type.lower() not in list[i]['category'].lower())):
                del(list[i])
+               #i = 0
                continue
             i += 1
 
-
-    #Sort on adjusted value
-    list.sort(key=lambda k: k['adjValue'], reverse=True)
-
-
-    topResults = []
+    list.sort(key=lambda k: k['adjValue'], reverse=True)#Sort on adjusted value
+    del list[20:] #Drop all but top 20, more would take too long to fetch stores
     
     params = dict(
         lat=48.428, #Ideally would get the user's location but this is integrating with slack which doesn't support that so use the middle of victoria with a 5km radius
@@ -109,7 +111,7 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
         sku=None
     )
 
-    del list[6:] #Drop all but top 5
+    
 
     #Append remaining products with location data of stores that carry it and are open now
     i = 0
@@ -118,6 +120,10 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
 
         #make network request, will return all stores that have product in stock
         res = req.get(url=storesUrl, params=params)
+        if res.status_code != 200: #Site sometimes returns a 503 so keep trying until we get a good response
+            time.sleep(0.5)
+            continue
+
         data = res.json()
 
         list[i]['stores'] = []
@@ -131,18 +137,19 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
                         stock = store['productAvailability'])
                     )
 
-
         #If no stores were found drop the product
         if not list[i]['stores'] or len(list[i]['stores']) < 1:
             del(list[i])
+            #i = 0
             continue
         i = i+1
         #else:
             #print(("SKU: {} with value rating of {}, adjusted score of {}. Customers rated it {}/5").format(prod['sku'], prod['value'], prod['adjValue'], prod['rating']))
 
+    del list[5:] #Drop all but top 5
     return list
 
 
 #for entry in filterProducts(maxPrice=30, type="gin"):
-#    print(entry)
-#    print("\n")
+ #   print(entry)
+  #  print("\n")

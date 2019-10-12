@@ -73,8 +73,12 @@ def handle_command(command, channel):
 
                     #PST liquor and GST 15%, then bottle deposit
                     price = round((prod['price']*1.15) + (perBottle*prod['count']),2)
+                    if prod['sale'] == 0:
+                        sale = ""
+                    else:
+                        sale = "*" + str(round(prod['sale'], 0)) + "% off*"
 
-                    sendMessage(channel, "*Score: {}* _Raw Value: {}_ - *{}* is *{}x{}mL* at *{}%*. Costs close to *${}* - rated *{}/5*. Available at {}".format(
+                    sendMessage(channel, "*Score: {}* _Raw Value: {}_ - *{}* is *{}x{}mL* at *{}%*. *${}* - rated *{}/5* {}. Available at {}".format(
                         prod['adjValue'],
                         prod['value'],
                         prod['name'],
@@ -83,6 +87,7 @@ def handle_command(command, channel):
                         prod['alcPerc'],
                         price,
                         prod['rating'],
+                        sale,
                         prod['stores']
                         )
                     )
