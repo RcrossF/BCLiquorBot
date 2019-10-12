@@ -11,3 +11,7 @@ For example:
 @liquorbot get gin 60 all  
 or  
 @liquorbot get all 0 fairfield
+
+
+TODO:
+Fix duplicate values returned from BC liquor website
