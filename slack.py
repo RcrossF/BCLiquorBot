@@ -50,19 +50,22 @@ def handle_command(command, channel):
    
     # This is where you start to implement more commands!
     if command.startswith(BOOK_COMMAND):
-        try:
-            sendMessage(channel, "Processing...")
-            searchTerm = command.split(' ')[1]
-            maxPrice = command.split(' ')[2]
-            store = command.split(' ')[3]
-            if not store:
-                store = "all"
-            
-            products = bot.filterProducts(float(maxPrice), searchTerm, store)
-            if len(products) == 0:
-                sendMessage(channel, "Nothing found")
-            else:
-                sendMessage(channel, "Based on the weights of: 80% value 20% ratings, here's what I found for *" + searchTerm + "*:")
+        #try:
+        sendMessage(channel, "Processing...")
+        searchTerm = command.split(' ')[1]
+        maxPrice = command.split(' ')[2]
+        store = command.split(' ')[3]
+        if not store:
+            store = "all"
+        
+        products = bot.filterProducts(float(maxPrice), searchTerm, store)
+        if len(products) == 0:
+            sendMessage(channel, "Nothing found")
+        elif type(products) is str:
+            sendMessage(channel, products)
+        else:
+            try:
+                sendMessage(channel, "Based on the weights of: 90% value 10% ratings, here's what I found for *" + searchTerm + "*:")
                 for prod in products:
 
                     #Rough estimate of bottle deposit
@@ -73,12 +76,20 @@ def handle_command(command, channel):
 
                     #PST liquor and GST 15%, then bottle deposit
                     price = round((prod['price']*1.15) + (perBottle*prod['count']),2)
-                    if prod['sale'] == 0:
+
+                    #If item is not on sale don't append any sale text
+                    if prod['sale'] == 0: 
                         sale = ""
                     else:
                         sale = "*" + str(round(prod['sale'], 0)) + "% off*"
 
-                    sendMessage(channel, "*Score: {}* _Raw Value: {}_ - *{}* is *{}x{}mL* at *{}%*. *${}* - rated *{}/5* {}. Available at {}".format(
+                    #If we're filtering by store don't bother to append available stores and just give stock
+                    if store is None or store == 'all': 
+                        stores = "Available at " + str(prod['stores'])
+                    else:
+                        stores = "Stock: *" + str(prod['stores'][0]['stock']) + "*"
+
+                    sendMessage(channel, "*Score: {}* _Raw Value: {}_ - *{}* is *{}x{}mL* at *{}%*. *${}* - rated *{}/5* {}. {}".format(
                         prod['adjValue'],
                         prod['value'],
                         prod['name'],
@@ -88,17 +99,17 @@ def handle_command(command, channel):
                         price,
                         prod['rating'],
                         sale,
-                        prod['stores']
+                        stores
                         )
                     )
 
-        except Exception as e:
-            sendMessage(channel, "Error, try something else")
-            sendMessage(channel, None)
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print(exc_type, fname, exc_tb.tb_lineno)
-            print(e)
+            except Exception as e:
+                sendMessage(channel, "Error, try something else")
+                sendMessage(channel, None)
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                print(exc_type, fname, exc_tb.tb_lineno)
+                print(e)
 
    
 

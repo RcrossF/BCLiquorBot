@@ -1,14 +1,19 @@
-import requests as req
+import requests
 import json
 import time
+import datetime as dt
 
 valWeight = 0.9
 ratingWeight = 0.1
 saleWeight = 0.2
 
+req = requests.Session()
+req.headers.update({'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:60.0) Gecko/20100101 Firefox/60.0'})
+
 storesUrl = "http://www.bcliquorstores.com/stores/search"
 url = "http://www.bcliquorstores.com/ajax/browse"
-params = dict(size=6000,page=1)
+pageSize = 6000
+params = dict(size=pageSize,page=1)
 products = []
 
 #Fetches results in buckets of 6000 and merges before returning
@@ -23,12 +28,17 @@ def fetch_web():
             params['page'] = i
             res = req.get(url=url, params=params, timeout=10)
             data = res.json()
-            products += data['hits']['hits']
+            if i == total_pages: #The last page will contain n elements that have already come up so that (remaining unique elements + n = pageSize)
+                unique_results = data['hits']['total'] % pageSize
+                products += data['hits']['hits'][unique_results:]
+            else:
+                products += data['hits']['hits']
 
     except req.exceptions.Timeout as e:
         return "BC Liquor is down"
 
     return products
+
 
 def fetchProducts():
     prods = fetch_web()
@@ -82,7 +92,6 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
         while i < len(list):
             if (list[i]['price']*1.15) > maxPrice: #Account for tax
                 del(list[i])
-                #i = 0
                 continue
             i = i+1
 
@@ -97,13 +106,19 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
 
             if ((type.lower() not in list[i]['type'].lower()) and (type.lower() not in list[i]['category'].lower())):
                del(list[i])
-               #i = 0
                continue
             i += 1
 
-    list.sort(key=lambda k: k['adjValue'], reverse=True)#Sort on adjusted value
-    del list[20:] #Drop all but top 20, more would take too long to fetch stores
+    list.sort(key=lambda k: k['adjValue'], reverse=True) #Sort on adjusted value
+
+    del list[30:]
+
+    list = [i for n, i in enumerate(list) if i not in list[n+1:]] #Filter any remaining duplicates, do it on the top 30 elements only though to save time
     
+
+    del list[20:] #Drop all but top 20, more would take too long to fetch stores. Could be problematic if >5 of the results aren't available at the currently chosen store
+    
+
     params = dict(
         lat=48.428, #Ideally would get the user's location but this is integrating with slack which doesn't support that so use the middle of victoria with a 5km radius
         lng=-123.365,
@@ -121,12 +136,16 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
 
         #make network request, will return all stores that have product in stock
         res = req.get(url=storesUrl, params=params)
-        if res.status_code != 200 and errors < 5: #Site sometimes returns a 503 so keep trying until we get a good response
+        if res.status_code != 200 and errors < 3: #Site sometimes returns a 503 if the item is invalid(?). Try 3 times and drop it if no success is had.
             errors += 1
-            time.sleep(0.5)
+            print("Bad response, retrying in 1s...")
+            time.sleep(1)
             continue
-        elif errors >= 5:
-            return "BC Liquor site returning error: "+res.status_code
+        elif errors >= 3:
+            print("No store results for " + list[i]['name'] + "(" + str(list[i]['sku']) + ")" "skipping...")
+            del(list[i])
+            errors = 0
+            continue
             
         errors = 0
         data = res.json()
@@ -145,7 +164,6 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
         #If no stores were found drop the product
         if not list[i]['stores'] or len(list[i]['stores']) < 1:
             del(list[i])
-            #i = 0
             continue
         i = i+1
         #else:
@@ -155,6 +173,6 @@ def filterProducts(maxPrice = 0, type = None, filterStore="all"):
     return list
 
 
-#for entry in filterProducts(maxPrice=30, type="gin"):
- #   print(entry)
-  #  print("\n")
+#for entry in filterProducts(maxPrice=30, type="gin", filterStore="fort"):
+#    print(entry)
+#    print("\n")
