@@ -1,5 +1,5 @@
 # BCLiquorBot
-Finds the optimal drinks for you to buy based 90% on value and 10% on reviews. Runs completely on AWS lambda/dynamoDB free tier and integrates with slack's modals.
+Finds the optimal drinks for you to buy based on weights you specify (default is 90% value 10% reviews with up to 20% boost for big sales). Runs completely on AWS lambda/dynamoDB free tier and integrates with slack's modals.
 
 ## Installing
 1. Create 3 lambda functions, first refreshes the cache, second searches said cache when a user submits a request, third acts as the slack middleman and manages modals (```cache.py```, ```dbSearch.py```, and ```slackHandler.py``` respectively)
