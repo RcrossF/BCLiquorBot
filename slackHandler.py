@@ -83,7 +83,8 @@ def lambda_handler(event, context):
                                      "max_price": max_price,
                                      "search_term": search_term,
                                      "stores": stores,
-                                     "response_url": body['response_urls'][0]['response_url']
+                                     "response_url": body['response_urls'][0]['response_url'],
+                                     "trigger_id": body['trigger_id']
                              }
                              ))
     
