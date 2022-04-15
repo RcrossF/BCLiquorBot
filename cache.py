@@ -8,6 +8,8 @@ import decimal
 
 
 PRODUCT_TABLE = os.environ['PRODUCT_TABLE']
+IMAGE_BASE800 = os.environ['IMAGE_BASE800']
+
 table = boto3.resource('dynamodb').Table(PRODUCT_TABLE)
 
 inventoryUrl = "http://www.bcliquorstores.com/ajax/get-product-inventory?sku="
@@ -100,13 +102,19 @@ def fetchProducts():
 
     listings = set()  # to append drinks to, avoiding duplicates
     for sku in products:
-        price = float(sku['_source']['currentPrice'])
-        regPrice = float(sku['_source']['regularPrice'])
-        sale = (1 - (price/regPrice))*100  # % savings
-        units = sku['_source']['unitSize']  # bottles/cans in product
-        vol = float(sku['_source']['volume'])  # volume/unit
-        alc = (float(sku['_source']['alcoholPercentage']))/100  # % alcohol
-        image = sku['_source']['image'].replace('jpeg', 'jpg') if sku['_source']['image'] is not None else None# Site lists them as jpeg but links actually require jpg
+        try:
+            price = float(sku['_source']['currentPrice'])
+            regPrice = float(sku['_source']['regularPrice'])
+            sale = (1 - (price/regPrice))*100  # % savings
+            units = sku['_source']['unitSize']  # bottles/cans in product
+            vol = float(sku['_source']['volume'])  # volume/unit
+            alc = (float(sku['_source']['alcoholPercentage']))/100  # % alcohol
+            image = sku['_source']['image'].replace('jpeg', 'jpg') if sku['_source']['image'] is not None else None# Site lists them as jpeg but links actually require jpg
+        except:
+            print(f"Error processing {sku['_source']['name']}")
+            
+        if image is None:
+            image = IMAGE_BASE800 + str(sku['_source']['sku']) + ".jpg"
         totalAlc = (units*vol)*(alc)
         value = (totalAlc/price)*100
 
