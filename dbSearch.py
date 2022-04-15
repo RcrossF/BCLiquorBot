@@ -46,7 +46,7 @@ class Listing:
     def __hash__(self):
         return hash((self.sku, self.name))
         
-def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stores=True, response_url=None):
+def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stores=True, response_url=None, trigger_id=None):
     # Query cache, filtering on applicable criteria
     # Not a great way to represent max price, ideally we would multiply item's price by 1.15(15% tax) but dynamodb doesn't support math in queries
     # t = dt.now()
@@ -100,7 +100,7 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
 
     del listings[TOP_N_RESULTS:] #Only take top N results
 
-    user_return_modal = RETURN_MODAL_TEMPLATE
+    user_return_modal = copy.deepcopy(RETURN_MODAL_TEMPLATE)
     user_return_modal['blocks'][0]['text']['text'] = user_return_modal['blocks'][0]['text']['text'].replace('N', str(TOP_N_RESULTS))
     user_return_modal['blocks'].append(DIVIDER_TEMPLATE)
 
@@ -138,7 +138,7 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
             .replace('{rating}', int(round(listing.rating, 0)) * '★') \
             .replace('{sale}', sale)
 
-        if requests.get(listing.image).status_code == 200:
+        if listing.image != None and requests.get(listing.image).status_code == 200:
             card['accessory']['image_url'] = listing.image
         else:
             card['accessory']['image_url'] = NOT_FOUND_IMAGE
@@ -153,9 +153,6 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
         user_return_modal['blocks'].append(location)
         user_return_modal['blocks'].append(DIVIDER_TEMPLATE)
 
-        # Having problems with card persisting
-        card = None
-        location = None
 
     #print(user_return_modal)
     
@@ -170,7 +167,7 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
     return
         
 def lambda_handler(event, context):
-    process_search(event['max_price'], event['search_term'], event['stores'], False, event['response_url'])
+    process_search(event['max_price'], event['search_term'], event['stores'], False, event['response_url'], event['trigger_id'])
     
     return {
         'statusCode': 200,
