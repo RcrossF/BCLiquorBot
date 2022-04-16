@@ -5,7 +5,8 @@ import json
 import time
 from datetime import datetime as dt
 import decimal
-
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 PRODUCT_TABLE = os.environ['PRODUCT_TABLE']
 IMAGE_BASE800 = os.environ['IMAGE_BASE800']
@@ -48,7 +49,7 @@ class Listing:
         self.value = value
         self.adjValue = adjValue
         self.sale = sale
-        self.image = image
+        self.image = image.replace("http", "https") if image is not None else None
         
         
         # To later store inventory (store:stock)
@@ -110,19 +111,23 @@ def fetchProducts():
             vol = float(sku['_source']['volume'])  # volume/unit
             alc = (float(sku['_source']['alcoholPercentage']))/100  # % alcohol
             image = sku['_source']['image'].replace('jpeg', 'jpg') if sku['_source']['image'] is not None else None# Site lists them as jpeg but links actually require jpg
-            if not requests.head(image, timeout=2).ok:
-                image = None
+            
         except:
             print(f"Error processing {sku['_source']['name']}")
             
-        if image is None:
-            image = IMAGE_BASE800 + str(sku['_source']['sku']) + ".jpg"
         totalAlc = (units*vol)*(alc)
         value = (totalAlc/price)*100
-
+        
         # Don't bother fetching low value products or anything over $100
         if value < 1.2 or price > 100:
             continue
+        
+        if image is None:
+            image = IMAGE_BASE800 + str(sku['_source']['sku']) + ".jpg"
+        # Check if remote image exists
+        if not requests.head(image, verify=False, timeout=2).ok:
+            image = None
+        
         
         # Adjust value by considering the score from bc liquor's site
         if(sku['_source']['consumerRating'] == None):
