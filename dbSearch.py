@@ -133,7 +133,7 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
             .replace('{rating}', int(round(listing.rating, 0)) * '★') \
             .replace('{sale}', sale)
         
-        if listing.image != None and requests.head(listing.image, verify=False, timeout=2).status_code == 200:
+        if listing.image != None:
             card['accessory']['image_url'] = listing.image
         else:
             print(f"Invalid image: {listing.image}")
