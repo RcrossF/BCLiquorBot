@@ -4,7 +4,6 @@ import requests
 import boto3
 import decimal
 import copy
-from datetime import datetime as dt
 
 TOP_N_RESULTS = int(os.environ['TOP_N_RESULTS'])
 RETURN_MODAL_TEMPLATE = json.loads(os.environ['RETURN_MODAL_TEMPLATE'])
@@ -50,7 +49,6 @@ class Listing:
 def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stores=True, response_url=None, trigger_id=None):
     # Query cache, filtering on applicable criteria
     # Not a great way to represent max price, ideally we would multiply item's price by 1.15(15% tax) but dynamodb doesn't support math in queries
-    t = dt.now()
     response = table.scan(
         FilterExpression = "(price <= :maxPrice OR :maxPrice <= :zero) \
                             AND (:drink_type = :all \
@@ -69,10 +67,7 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
                 '#cash_value': 'value'
         }
     )
-    print(dt.now()-t)
-    # print(dt.now()-t)
-    # print("DB returned response:")
-    # print(response)
+
     # Create listing objects for items in stock at a store we're searching for
     listings = []
     
@@ -99,10 +94,6 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
             listing.inventory = {k:int(v) for k,v in elem['inventory'].items() if int(k) in filterStores}
             listings.append(listing)
 
-    # Sort on adjusted value
-    #listings.sort(key=lambda k: k.adjValue, reverse=True)
-
-    #del listings[TOP_N_RESULTS:] #Only take top N results
     
     user_return_modal = copy.deepcopy(RETURN_MODAL_TEMPLATE)
     user_return_modal['blocks'][0]['text']['text'] = user_return_modal['blocks'][0]['text']['text'].replace('N', str(TOP_N_RESULTS))
