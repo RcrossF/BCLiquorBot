@@ -76,7 +76,8 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
     # Create listing objects for items in stock at a store we're searching for
     listings = []
     
-    for elem in response['Items']:
+    response['Items'].sort(key=lambda x: x['price'], reverse=True)
+    for elem in response['Items'][TOP_N_RESULTS:]:
         # At least one store we're searching on stocks this item
         stores_in_stock = set(map(str, filterStores))&set([i for i in elem['inventory'].keys()])
 
@@ -99,9 +100,9 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
             listings.append(listing)
 
     # Sort on adjusted value
-    listings.sort(key=lambda k: k.adjValue, reverse=True)
+    #listings.sort(key=lambda k: k.adjValue, reverse=True)
 
-    del listings[TOP_N_RESULTS:] #Only take top N results
+    #del listings[TOP_N_RESULTS:] #Only take top N results
     
     user_return_modal = copy.deepcopy(RETURN_MODAL_TEMPLATE)
     user_return_modal['blocks'][0]['text']['text'] = user_return_modal['blocks'][0]['text']['text'].replace('N', str(TOP_N_RESULTS))
