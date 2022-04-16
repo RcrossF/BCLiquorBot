@@ -110,6 +110,8 @@ def fetchProducts():
             vol = float(sku['_source']['volume'])  # volume/unit
             alc = (float(sku['_source']['alcoholPercentage']))/100  # % alcohol
             image = sku['_source']['image'].replace('jpeg', 'jpg') if sku['_source']['image'] is not None else None# Site lists them as jpeg but links actually require jpg
+            if not requests.head(image, timeout=2).ok:
+                image = None
         except:
             print(f"Error processing {sku['_source']['name']}")
             
