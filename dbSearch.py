@@ -76,7 +76,7 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
     # Create listing objects for items in stock at a store we're searching for
     listings = []
     
-    response['Items'].sort(key=lambda x: x['price'], reverse=True)
+    response['Items'].sort(key=lambda x: x['adjValue'], reverse=True)
     for elem in response['Items'][TOP_N_RESULTS:]:
         # At least one store we're searching on stocks this item
         stores_in_stock = set(map(str, filterStores))&set([i for i in elem['inventory'].keys()])
