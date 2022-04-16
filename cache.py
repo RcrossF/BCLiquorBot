@@ -120,8 +120,8 @@ def fetchProducts():
         totalAlc = (units*vol)*(alc)
         value = (totalAlc/price)*100
 
-        # Don't bother fetching low value products
-        if value < 1.2:
+        # Don't bother fetching low value products or anything over $100
+        if value < 1.2 or price > 100:
             continue
         
         # Adjust value by considering the score from bc liquor's site
