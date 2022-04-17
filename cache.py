@@ -51,7 +51,7 @@ class Listing:
         self.value = value
         self.adjValue = adjValue
         self.sale = sale
-        self.image = image.replace("http", "https") if image is not None else None
+        self.image = image
         
         
         # To later store inventory (store:stock)
