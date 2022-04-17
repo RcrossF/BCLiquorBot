@@ -7,6 +7,8 @@ from datetime import datetime as dt
 import decimal
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+import bs4
+import re
 
 PRODUCT_TABLE = os.environ['PRODUCT_TABLE']
 IMAGE_BASE800 = os.environ['IMAGE_BASE800']
@@ -111,6 +113,7 @@ def fetchProducts():
             vol = float(sku['_source']['volume'])  # volume/unit
             alc = (float(sku['_source']['alcoholPercentage']))/100  # % alcohol
             image = sku['_source']['image'].replace('jpeg', 'jpg') if sku['_source']['image'] is not None else None# Site lists them as jpeg but links actually require jpg
+            image = image.replace('http', 'https') # this is because a request to the http version will return a 301 instead of 200 or 404 like we want
             
         except:
             print(f"Error processing {sku['_source']['name']}")
@@ -124,10 +127,28 @@ def fetchProducts():
         
         if image is None:
             image = IMAGE_BASE800 + str(sku['_source']['sku']) + ".jpg"
+
         # Check if remote image exists
         if not requests.head(image, verify=False, timeout=2).ok:
-            image = None
-        
+            # If remote image does not exist find a suitable replacement from the web
+            
+            print('Remote image does not exist for', sku['_source']['name'])
+            print('Finding suitable replacement from web')
+
+            search = sku['_source']['name']
+            formatted_search = search.replace(' ', '+')
+            img_url = 'https://www.bing.com/images/search?q=' + formatted_search
+
+            req_img = req.get(img_url)
+            soup = bs4.BeautifulSoup(req_img.content, 'html.parser')
+            img = soup.find('img', alt=re.compile('Image result for.*'))
+
+            if img is not None:
+                image = img['src']
+                print('Remote image found!', image)
+            else:
+                image = None
+                print('Remote image not found :(')  
         
         # Adjust value by considering the score from bc liquor's site
         if(sku['_source']['consumerRating'] == None):
