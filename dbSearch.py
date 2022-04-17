@@ -49,7 +49,6 @@ class Listing:
 def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stores=True, response_url=None, trigger_id=None):
     # Query cache, filtering on applicable criteria
     # Not a great way to represent max price, ideally we would multiply item's price by 1.15(15% tax) but dynamodb doesn't support math in queries
-    # t = dt.now()
     response = table.scan(
         FilterExpression = "(price <= :maxPrice OR :maxPrice <= :zero) \
                             AND (:drink_type = :all \
@@ -68,12 +67,12 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
                 '#cash_value': 'value'
         }
     )
-    # print(dt.now()-t)
-    # print("DB returned response:")
-    # print(response)
+
     # Create listing objects for items in stock at a store we're searching for
     listings = []
-    for elem in response['Items']:
+    
+    response['Items'].sort(key=lambda x: x['adjValue'], reverse=True)
+    for elem in response['Items'][TOP_N_RESULTS:]:
         # At least one store we're searching on stocks this item
         stores_in_stock = set(map(str, filterStores))&set([i for i in elem['inventory'].keys()])
 
@@ -95,11 +94,7 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
             listing.inventory = {k:int(v) for k,v in elem['inventory'].items() if int(k) in filterStores}
             listings.append(listing)
 
-    # Sort on adjusted value
-    listings.sort(key=lambda k: k.adjValue, reverse=True)
-
-    del listings[TOP_N_RESULTS:] #Only take top N results
-
+    
     user_return_modal = copy.deepcopy(RETURN_MODAL_TEMPLATE)
     user_return_modal['blocks'][0]['text']['text'] = user_return_modal['blocks'][0]['text']['text'].replace('N', str(TOP_N_RESULTS))
     user_return_modal['blocks'].append(DIVIDER_TEMPLATE)
@@ -137,10 +132,11 @@ def process_search(maxPrice=0, drink_type="all", filterStores=[], only_open_stor
             .replace('{value}', str(listing.value)) \
             .replace('{rating}', int(round(listing.rating, 0)) * '★') \
             .replace('{sale}', sale)
-
-        if listing.image != None and requests.get(listing.image).status_code == 200:
+        
+        if listing.image != None:
             card['accessory']['image_url'] = listing.image
         else:
+            print(f"Invalid image: {listing.image}")
             card['accessory']['image_url'] = NOT_FOUND_IMAGE
         
         stores_string = ""
