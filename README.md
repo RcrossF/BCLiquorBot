@@ -1,4 +1,8 @@
 # BCLiquorBot
+## Introduction  
+BCLiquorBot is a serverless app built for slack that finds the best value drinks from BC liquor stores. It supports search terms, price filtering, and store stock information. See the following demo.
+<img src="https://user-images.githubusercontent.com/16991582/163689647-1f4abef0-9985-43c3-b9ee-814eb4c8c6a7.gif" width="700" />
+
 Finds the optimal drinks for you to buy based on weights you specify (default is 90% value 10% reviews with up to 20% boost for big sales). Runs completely on AWS lambda/dynamoDB free tier and integrates with slack's modals.
 
 ## Installing
