@@ -6,16 +6,21 @@ BCLiquorBot is a serverless app built for slack that finds the best value drinks
 Finds the optimal drinks for you to buy based on weights you specify (default is 90% value 10% reviews with up to 20% boost for big sales). Runs completely on AWS lambda/dynamoDB free tier and integrates with slack's modals.
 
 ## Installing
-1. Create 3 lambda functions, first refreshes the cache, second searches said cache when a user submits a request, third acts as the slack middleman and manages modals (```cache.py```, ```dbSearch.py```, and ```slackHandler.py``` respectively)
-2. Create a new layer with requests, add it to all 3 functions
-3. Create a slack app, subscribe to users opening your homepage and enable interactivity. Link it to function #3 (slack middleman)
-4. Create a global action for the app (optional)
-5. Create a dynamodb instance with a table for products, give permission to the cache and search functions
-6. Create the appropriate environment variables for each function (below)
-7. Schedule the cache updater to run every 2 or so hours
-8. Set cache lambda timeout to 15 mins
-9. Give slack middleman permission to invoke searchDB
-10. For faster results (while still staying under the free tier limits) up the memory of the database search function to 448MB
+1. Create a new layer in AWS containing requests
+2. Create 3 empty lambda functions. They will act microservices as follows
+   * Slack middleman (```slackHandler.py```) - Manages modals and user input formatting
+   * Search and filter (```dbSearch.py```) - Accesses the cache, fetches images, and filters results based on the user's request
+   * Cache refresher (```cache.py```) - Updates our local DynamoDB cache to avoid long calls to BC Liquor's API
+3. Schedule the cache updater to run every 2 or so hours
+4. Set cache lambda timeout to 15 mins
+5. Give slack middleman permission to invoke searchDB
+6. Create a dynamodb instance with a table for products, give permission to the cache and search functions
+7. Create a slack app for your workspace, subscribe to users opening your homepage and enable interactivity. Link it to function #1 (slack middleman)
+
+8. Create the appropriate environment variables for each function (below)
+9. Create a global action for the app in slack for easier user access (optional)
+
+12. For faster results (while still staying under the free tier limits) up the memory of the database search function to 448MB
 
 ### Env Variables
 #### Cache
